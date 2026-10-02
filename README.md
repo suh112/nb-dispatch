@@ -1,85 +1,246 @@
-# nb-dispatch v1.0.0
+# nb-dispatch
 
-**Modern Multi-Framework FiveM Dispatch System**
+Modern Multi-Framework FiveM Dispatch System
+
 Created by **NullBound - Veyx (AJ)**
 
-A production-ready dispatch resource for FiveM with full **ESX Legacy**, **QBCore**, **QBox**, and **Standalone** support behind a single framework-agnostic bridge, a modern dark-themed React/TypeScript NUI, and a fully server-authoritative security model.
+---
+
+## Features
+
+- Full dispatch system: calls, priorities, assignment, notes, blips, waypoints, history
+- Works out of the box with **ESX Legacy**, **QBCore**, **QBox**, or **no framework at all** (Standalone)
+- Clean framework abstraction - the dispatch logic never touches `ESX`/`QBCore`/`qbx_core` directly
+- Fully configurable departments/jobs (police, sheriff, state, FIB, EMS, or your own)
+- Grade based permission system (officer / supervisor / dispatcher / command / admin)
+- Panic button with cooldown and automatic priority-1 call + blip
+- Optional automatic dispatch: gunshots, vehicle theft, crashes, pursuits
+- Citizen `/911` reporting for non-unit players
+- Modern dark dispatch UI (React + TypeScript + Vite + Mantine), red/blue emergency accents
+- Server authoritative - every action (accept/assign/close/panic/status/etc.) is validated and rate limited server side
+- Optional `oxmysql` persistence - the resource works fully in-memory if disabled
+- Clean export API for other resources
 
 ---
 
-## ✨ Highlights
+## Requirements
 
-- 🔌 **Drop-in multi-framework support** — ESX Legacy, QBCore, QBox, or no framework at all. Auto-detected on boot, with safe fallback to Standalone if nothing is found.
-- 🧩 **Clean bridge architecture** — the dispatch core never touches `ESX`/`QBCore`/`qbx_core` directly; everything routes through `Framework.*`.
-- 🏢 **Fully configurable departments** — police, sheriff, state, FIB, EMS, or your own custom jobs, each with its own grades and permission overrides.
-- 🚨 **18+ built-in call types** — from `10-13 Officer Down` to bank/store/jewelry robberies, pursuits, medical emergencies, and fires — plus custom calls.
-- 🆘 **Panic button** — configurable cooldown, priority-1 broadcast, map blip, and full-screen alert for every unit in the department.
-- 🤖 **Automatic dispatch** — gunshots, vehicle theft, crashes, and pursuits can raise calls on their own, with per-feature cooldowns and area dedupe so it never spams.
-- 📞 **Citizen `/911` reporting** for players who aren't on-duty units.
-- 🖥️ **Modern dispatch UI** — React + TypeScript + Vite, dashboard, call list/detail, unit roster, notes, search & filters, toast notifications.
-- 🔒 **Server authoritative** — every action (accept, assign, close, panic, status change, callsign, note) is re-validated server-side: job, permission level, rate limit, ownership. The client is never trusted.
-- 🗄️ **Optional `oxmysql` persistence** — fully functional in-memory with zero database setup; enable it when you want call history retained across restarts.
-- 📦 **Clean export API** for other resources to create calls, pull active calls, or read online units.
+- A recent FiveM server build
+- Node.js 18+ and npm (only needed to **build** the UI, not to run the resource)
+- Optional: [oxmysql](https://github.com/overextended/oxmysql) if you enable the database
+- Optional: a postal resource exporting `getPostal(coords)` (e.g. `nearest-postal`) for postal codes
 
 ---
 
-## 📥 Installation
+## Installation
 
-1. Drop `nb-dispatch` into your `resources` folder.
+1. Copy the `nb-dispatch` folder into your server's `resources` directory.
 2. Build the UI once:
+
    ```bash
    cd nb-dispatch/web
    npm install
    npm run build
    ```
-3. Add `ensure nb-dispatch` to your `server.cfg`.
-4. (Optional) Run `sql/install.sql` and set `Config.Database.Enabled = true` if you want persistence.
 
-Full setup instructions for each framework, permissions, exports, events, and troubleshooting are in [`README.md`](./README.md).
+   This produces `web/build/index.html` + `web/build/assets/*`, which is what `fxmanifest.lua` serves as the NUI page.
+
+3. Add to `server.cfg`:
+
+   ```cfg
+   ensure nb-dispatch
+   ```
+
+4. (Optional) If using the database, run `sql/install.sql` against your database and set `Config.Database.Enabled = true` in `config.lua`.
+
+### ESX Legacy installation
+
+No extra steps. Set `Config.Framework = 'auto'` (default) or `'esx'`. Make sure `es_extended` starts **before** `nb-dispatch` in `server.cfg`.
+
+### QBCore installation
+
+No extra steps. Set `Config.Framework = 'auto'` or `'qbcore'`. Make sure `qb-core` starts before `nb-dispatch`.
+
+### QBox installation
+
+No extra steps. Set `Config.Framework = 'auto'` or `'qbox'`. Works with either the `qbx_core` or `qbox-core` resource name. Make sure it starts before `nb-dispatch`.
+
+### Standalone installation
+
+Set `Config.Framework = 'standalone'` (or leave on `'auto'` with no framework running). Grant jobs/grades via ACE permissions in `server.cfg`:
+
+```cfg
+add_ace group.police nb-dispatch.job.police allow
+add_ace group.police nb-dispatch.grade.police.2 allow
+add_principal identifier.license:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx group.police
+```
+
+A player with `nb-dispatch.job.police` but no explicit grade ace is treated as grade 0. You can fully replace this logic with `Config.Standalone.Resolver` (see `config.lua`).
 
 ---
 
-## ⚙️ Requirements
+## Configuration
 
-- FiveM server (recent artifact)
-- Node.js 18+ / npm (build-time only, not required to run the resource)
-- Optional: [`oxmysql`](https://github.com/overextended/oxmysql)
-- Optional: a postal resource exporting `getPostal(coords)`
+Everything important lives in `config.lua`:
 
----
+- `Config.Framework` - `'auto' | 'esx' | 'qbcore' | 'qbox' | 'standalone'`
+- `Config.Jobs` - which departments use dispatch, their label/type/grades
+- `Config.Permissions` / `Config.GradePermissions` / `Config.ActionPermissions` - who can do what
+- `Config.CallTypes` - every built-in 10-code / call type, its default priority and blip
+- `Config.AutomaticDispatch` / `Config.AutomaticDispatchCooldowns` - automatic call toggles & cooldowns
+- `Config.Sounds` / `Config.SoundBank` - notification sounds
+- `Config.Database` - optional oxmysql persistence
+- `Config.RateLimits` - per-action server side rate limiting
 
-## 🔧 Configuration
+### Framework detection
 
-Everything lives in `config.lua`:
+With `Config.Framework = 'auto'`, on resource start (and whenever a framework resource starts later) the server checks, in order: QBox -> QBCore -> ESX Legacy -> Standalone, and prints:
+
+```
+[nb-dispatch] Framework detected: QBox
+```
+
+If a framework is explicitly selected but its resource isn't running, nb-dispatch automatically falls back to Standalone rather than erroring.
+
+### Job configuration
+
+Nothing assumes `police` is your only department:
 
 ```lua
-Config.Framework = 'auto'   -- 'auto' | 'esx' | 'qbcore' | 'qbox' | 'standalone'
-Config.Jobs = { police = { enabled = true, label = 'Police', type = 'police', grades = { ... } }, ... }
-Config.Permissions = { officer = 0, supervisor = 1, dispatcher = 2, command = 3, admin = 4 }
-Config.AutomaticDispatch = { Gunshots = true, VehicleTheft = true, VehicleCrash = true, Assault = false, Pursuit = true }
+Config.Jobs = {
+    police  = { enabled = true, label = 'Police', type = 'police', grades = { ... } },
+    sheriff = { enabled = true, label = 'Sheriff', type = 'police' },
+    state   = { enabled = true, label = 'State Police', type = 'police' },
+}
+```
+
+Add/remove/rename freely. A call's `jobs` list decides which departments see it (`Config.DefaultJobs` is used when a call doesn't specify its own).
+
+### Permissions
+
+Permission level is resolved purely from the player's numeric job **grade**, through `Config.GradePermissions` (or a per-job override via `jobCfg.permissionGrades`) - grade **names** are never used for security decisions, and the exact same config works identically across ESX, QBCore and QBox. `Config.ActionPermissions` maps each action (accept/assign/close/panic/...) to a required permission level.
+
+---
+
+## Database
+
+Fully optional. With `Config.Database.Enabled = false` (default), nb-dispatch runs entirely in memory - calls, notes and history work normally, they just aren't persisted across a restart. Set it to `true` and run `sql/install.sql` once `oxmysql` is installed to log calls, notes and unit assignment history.
+
+---
+
+## Exports
+
+### Server (trusted resource-to-resource calls)
+
+```lua
+local call = exports['nb-dispatch']:CreateCall({
+    code = '10-31',
+    title = 'Store Robbery',
+    description = 'Store robbery in progress',
+    priority = 1,
+    coords = vector3(123.4, 456.7, 78.9),
+    jobs = { 'police', 'sheriff' },
+    blip = { sprite = 161, color = 1, scale = 1.0, duration = 120 },
+})
+
+exports['nb-dispatch']:GetActiveCalls()
+exports['nb-dispatch']:GetUnits()
+```
+
+### Client (per-player)
+
+```lua
+exports['nb-dispatch']:OpenDispatch()
+exports['nb-dispatch']:CloseDispatch()
+exports['nb-dispatch']:PanicButton()
+exports['nb-dispatch']:IsAuthorized()
 ```
 
 ---
 
-## 🧱 What's inside
+## Events
 
+```text
+Server:
+nb-dispatch:server:createCall
+nb-dispatch:server:acceptCall
+nb-dispatch:server:assignCall
+nb-dispatch:server:unassignCall
+nb-dispatch:server:closeCall
+nb-dispatch:server:addNote
+nb-dispatch:server:updateUnitStatus
+nb-dispatch:server:panic
+nb-dispatch:server:setCallsign
+nb-dispatch:server:requestSync
+nb-dispatch:server:autoDispatch
+nb-dispatch:server:citizen911
+nb-dispatch:server:pursuitFlag
+
+Client:
+nb-dispatch:client:updateCalls
+nb-dispatch:client:updateUnits
+nb-dispatch:client:newCall
+nb-dispatch:client:panic
+nb-dispatch:client:open
+nb-dispatch:client:close
+nb-dispatch:client:notify
+nb-dispatch:client:syncMeta
 ```
-nb-dispatch/
-├── bridge/     ESX / QBCore / QBox / Standalone adapters behind one interface
-├── client/     NUI bridge, blips, automatic dispatch detection
-├── server/     Calls, units, permissions, optional database persistence
-├── shared/     Constants & utilities
-├── sql/        Optional oxmysql schema
-├── web/        React + TypeScript + Vite dispatch UI
-└── config.lua  Every configurable option, fully commented
-```
+
+All server events re-validate job, permission, rate limit and payload shape - the client is never trusted to supply its own permission level, callsign uniqueness, or call ownership.
 
 ---
 
-## 📜 License / Credit
+## Commands
 
-Please keep the **NullBound - Veyx (AJ)** attribution in the README, fxmanifest, and UI footer intact if you redistribute or modify this resource.
+| Command | Description |
+|---|---|
+| `/dispatch` (or `F9`) | Toggle the dispatch UI |
+| `/panic` | Trigger the panic button |
+| `/callsign <text>` | Set your callsign |
+| `/pursuit` | Flag a pursuit at your current position |
+| `/911 <message>` | Citizen emergency report (non-units) |
 
 ---
 
-**Full Changelog**: initial release
+## NUI development
+
+```bash
+cd web
+npm install
+npm start          # dev server on :3001, uses mock data (src/components/Dispatch/mockData.ts)
+npm run build      # production build into web/build
+```
+
+`src/utils/fetchNui.ts` and `src/hooks/useNuiEvent.ts` are the NUI <-> Lua bridge. State lives in a small Zustand store (`src/store/dispatchStore.ts`). The UI never trusts itself for permissions - buttons may be visually enabled, but every mutating action is re-checked server side.
+
+---
+
+## Performance
+
+- No `while true do` without a `Wait` - every loop sleeps appropriately
+- Unit coordinate refresh is batched on a single `Config.UnitUpdateInterval` second timer, not per-frame
+- Blips are created once per call and cleaned up automatically on close/expire/resource stop
+- NUI pushes are event driven (new call / updated calls / updated units), not polled by the UI
+- Automatic dispatch detection runs on cheap polling threads (250ms-2s) and is skipped entirely for on-duty units (`Config.IgnoreUnitsInAutoDispatch`)
+
+---
+
+## Security
+
+- Every mutating action is validated server side: job, permission level, callsign/unit ownership, call existence, and a per-action rate limit
+- A client can never close calls it's not permitted to, assign/unassign other units without supervisor permission, fake its job, or bypass the panic cooldown
+- `CreateCall` with custom `coords` (dispatcher-only) still requires the `dispatcher` permission level; everyone else's calls are pinned to their own position
+
+---
+
+## Troubleshooting
+
+- **UI is blank / "Framework detected: Standalone" when you expected otherwise** - make sure your framework resource (`es_extended`, `qb-core`, `qbx_core`/`qbox-core`) is listed **before** `nb-dispatch` in `server.cfg`, or set `Config.Framework` explicitly.
+- **"web/build/index.html not found"** - you need to run `npm install && npm run build` inside `web/` once; the build output isn't committed.
+- **Postal shows N/A** - install a postal resource and point `Config.Postal.Resource` / `Config.Postal.Export` at it, or disable with `Config.Postal.Enabled = false`.
+- **Database errors** - confirm `oxmysql` is started and `sql/install.sql` has been executed; otherwise leave `Config.Database.Enabled = false`.
+
+---
+
+nb-dispatch - Created by **NullBound - Veyx (AJ)**
