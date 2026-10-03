@@ -1,7 +1,7 @@
 # nb-dispatch
 
 <p align="center">
-  <img src="https://files.catbox.moe/79dwoy.png" alt="nb-dispatch banner" width="100%">
+  <img src="https://cdn.discordapp.com/attachments/955726487380693032/1555995269383069766/image.png?backend=b2&ex=6ac28d05&is=6ac13b85&hm=0e42ffdc93f8764ea2664bfb4a1d27a4ff4aaed3c6e91c0604a31d8691b4e77b&" alt="nb-dispatch banner" width="100%">
 </p>
 
 
