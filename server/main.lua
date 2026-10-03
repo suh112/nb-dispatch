@@ -1,5 +1,6 @@
 local panicCooldowns = {}
 local citizen911Cooldowns = {}
+local unitDownCooldowns = {}
 
 local function rateOk(src, action)
     local limits = Config.RateLimits[action] or Config.RateLimits.default
@@ -40,6 +41,7 @@ AddEventHandler('playerDropped', function()
     Units.Remove(src)
     panicCooldowns[src] = nil
     citizen911Cooldowns[src] = nil
+    unitDownCooldowns[src] = nil
     Units.Broadcast()
 end)
 
@@ -268,6 +270,48 @@ RegisterNetEvent(Constants.Events.Panic, function()
     else
         notify(src, err)
     end
+end)
+
+local function doUnitDown(src, coords)
+    if not Config.UnitDownAlert or not Config.UnitDownAlert.Enabled then return end
+
+    local unit = Units.Get(src)
+    if not unit then return end
+
+    local now = os.time()
+    if unitDownCooldowns[src] and (now - unitDownCooldowns[src]) < (Config.UnitDownAlert.Cooldown or 15) then
+        return
+    end
+    unitDownCooldowns[src] = now
+
+    local callCoords = (type(coords) == 'table' and type(coords.x) == 'number') and coords or unit.coords
+
+    local call = Calls.Create({
+        type = 'officer_down',
+        description = string.format('%s (%s) is down and needs immediate assistance.', unit.callsign, unit.name),
+        coords = callCoords,
+        jobs = { unit.job },
+    }, { caller = unit.callsign, source = 'unitdown' })
+
+    for _, dst in ipairs(Framework.GetOnlinePlayers()) do
+        local u = Units.Get(dst)
+        if u and u.job == unit.job then
+            TriggerClientEvent(Constants.Events.UnitDown_C, dst, {
+                source = src,
+                callsign = unit.callsign,
+                name = unit.name,
+                department = unit.department,
+                coords = callCoords,
+                callId = call and call.id,
+            })
+        end
+    end
+end
+
+RegisterNetEvent(Constants.Events.UnitDown, function(coords)
+    local src = source
+    if not rateOk(src, 'default') then return end
+    doUnitDown(src, coords)
 end)
 
 RegisterCommand(Config.PanicCommand, function(src)

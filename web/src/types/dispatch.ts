@@ -1,6 +1,3 @@
-// nb-dispatch - shared UI types
-// Created by NullBound - Veyx (AJ)
-
 export interface DispatchCoords {
   x: number;
   y: number;
@@ -31,7 +28,7 @@ export interface DispatchBlip {
 }
 
 export type CallStatus = 'pending' | 'active' | 'closed';
-export type CallSource = 'player' | 'automatic' | 'citizen' | 'resource' | 'panic';
+export type CallSource = 'player' | 'automatic' | 'citizen' | 'resource' | 'panic' | 'unitdown';
 
 export interface DispatchCall {
   id: string;
@@ -130,6 +127,15 @@ export interface SyncMeta {
 }
 
 export interface PanicEvent {
+  source: number;
+  callsign: string;
+  name: string;
+  department: string;
+  coords: DispatchCoords;
+  callId?: string;
+}
+
+export interface UnitDownEvent {
   source: number;
   callsign: string;
   name: string;

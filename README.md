@@ -14,6 +14,8 @@ Created by **NullBound - Veyx (AJ)**
 - Fully configurable departments/jobs (police, sheriff, state, FIB, EMS, or your own)
 - Grade based permission system (officer / supervisor / dispatcher / command / admin)
 - Panic button with cooldown and automatic priority-1 call + blip
+- Unit down alert - automatically raises a priority-1 call and full-department alert (screen flash + siren + bundled `.mp3` alarm) when an on-duty unit (police, EMS, or any configured job) dies
+- Bundled `.mp3` alert tones played client-side through the NUI for every automatically detected illegal activity (gunshots, vehicle theft, crashes, pursuits), independent of in-game sound settings
 - Optional automatic dispatch: gunshots, vehicle theft, crashes, pursuits
 - Citizen `/911` reporting for non-unit players
 - Modern dark dispatch UI (React + TypeScript + Vite + Mantine), red/blue emergency accents
@@ -91,6 +93,7 @@ Everything important lives in `config.lua`:
 - `Config.Sounds` / `Config.SoundBank` - notification sounds
 - `Config.Database` - optional oxmysql persistence
 - `Config.RateLimits` - per-action server side rate limiting
+- `Config.UnitDownAlert` - enable/disable and cooldown for the automatic unit-down alert
 
 ### Framework detection
 
@@ -223,6 +226,16 @@ npm run build      # production build into web/build
 - Blips are created once per call and cleaned up automatically on close/expire/resource stop
 - NUI pushes are event driven (new call / updated calls / updated units), not polled by the UI
 - Automatic dispatch detection runs on cheap polling threads (250ms-2s) and is skipped entirely for on-duty units (`Config.IgnoreUnitsInAutoDispatch`)
+- Vehicle theft detection uses the native `IsPedJacking` check rather than a lock-status heuristic, so it won't false-positive on key-system-locked owned vehicles
+
+---
+
+## Alerts & sounds
+
+- **Illegal activity alerts** - every automatically raised call (gunshots, vehicle theft, crashes, pursuits, assault) plays a distinct `.mp3` alarm tone client-side through the NUI (`web/src/assets/sounds/alert_illegal.mp3`), in addition to the native in-game sound controlled by `Config.Sounds`/`Config.SoundBank`. Player/dispatcher/citizen-created calls play a softer chime instead.
+- **Panic button** - full-screen red flash overlay + siren `.mp3` + native sound, broadcast to every online unit of the same department.
+- **Unit down** - when an on-duty unit (`IsEntityDead` transition) dies, the server raises a priority-1 `officer_down` call for their department and broadcasts a full-screen alert (orange flash + `.mp3` + native sound) to every unit sharing that job. Toggle with `Config.UnitDownAlert.Enabled` / `.Cooldown`.
+- NUI alert sounds keep playing even while the dispatch panel is closed, since the NUI page stays loaded in the background - only its visibility/focus toggles.
 
 ---
 

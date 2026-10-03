@@ -1,7 +1,5 @@
 import { createTheme } from '@mantine/core';
 
-// Identical palette/typography to the reference HUD (web.zip) -
-// same dark scale, same Tussilago brand font, same default radius.
 const theme = createTheme({
   defaultRadius: 'xs',
   fontFamily: 'Tussilago, sans-serif',

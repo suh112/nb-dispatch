@@ -32,6 +32,13 @@ Config.AutoBlips = true          -- create a map blip on every new call for visi
 Config.AutoWaypointOnAccept = true
 Config.PanicJobs = nil           -- nil = every enabled job of type 'police'; or { 'police', 'sheriff' }
 
+-- Automatically raises a priority-1 call + full department alert when an on-duty
+-- dispatch unit (police, EMS, or any configured job) dies.
+Config.UnitDownAlert = {
+    Enabled = true,
+    Cooldown = 15, -- seconds, per unit - stops duplicate alerts from the same death
+}
+
 Config.Database = {
     Enabled = false,
     Driver = 'oxmysql',
@@ -176,16 +183,21 @@ Config.AutomaticSettings = {
     PursuitMinSpeedMph = 55.0,           -- wanted level > 0 + driving at least this fast
 }
 
+-- Native in-game (GTA soundset) alerts. The NUI also plays its own bundled
+-- .mp3 alert tones independently of these - this toggle only controls the
+-- native PlaySoundFrontend layer.
 Config.Sounds = {
     NewCall = true,
     Priority1 = true,
     Panic = true,
+    UnitDown = true,
 }
 
 Config.SoundBank = {
     NewCall   = { name = 'Event_Message_Purple', set = 'GTAO_FM_Events_Soundset', repeats = 1 },
     Priority1 = { name = 'Beep_Red', set = 'DLC_HEIST_HACKING_SNAKE_SOUNDS', repeats = 3 },
     Panic     = { name = 'Lose_1st', set = 'GTAO_FM_Events_Soundset', repeats = 4 },
+    UnitDown  = { name = 'Lose_1st', set = 'GTAO_FM_Events_Soundset', repeats = 5 },
 }
 
 -- Blip defaults: sprite, color, scale, duration (seconds), flash

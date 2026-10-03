@@ -123,3 +123,20 @@ if Config.AutomaticDispatch.Assault then
         end
     end)
 end
+
+if Config.UnitDownAlert and Config.UnitDownAlert.Enabled then
+    CreateThread(function()
+        local wasDead = false
+        while true do
+            Wait(1000)
+            local ped = PlayerPedId()
+            local isDead = IsEntityDead(ped)
+
+            if isDead and not wasDead and localIsUnit then
+                TriggerServerEvent(Constants.Events.UnitDown, Utils.VecToTable(GetEntityCoords(ped)))
+            end
+
+            wasDead = isDead
+        end
+    end)
+end

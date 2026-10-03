@@ -1,6 +1,3 @@
-// nb-dispatch - misc helpers
-// Created by NullBound - Veyx (AJ)
-
 export const isEnvBrowser = (): boolean => !(window as any).invokeNative;
 
 export const noop = () => {};

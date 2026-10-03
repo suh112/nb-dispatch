@@ -1,4 +1,3 @@
-// Browser-preview mock data (only used when running `npm start`, never in game)
 import type { DispatchCall, DispatchUnit, SyncMeta } from '../../types/dispatch';
 
 export const MOCK_META: SyncMeta = {

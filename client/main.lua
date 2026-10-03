@@ -68,6 +68,11 @@ RegisterNetEvent(Constants.Events.Panic_C, function(data)
     PlayDispatchSound('Panic')
 end)
 
+RegisterNetEvent(Constants.Events.UnitDown_C, function(data)
+    SendNUIMessage({ action = Constants.NuiActions.UnitDown, data = data })
+    PlayDispatchSound('UnitDown')
+end)
+
 RegisterNetEvent(Constants.Events.Notify, function(message, type_)
     SendNUIMessage({ action = Constants.NuiActions.Notify, data = { message = message, type = type_ } })
 end)

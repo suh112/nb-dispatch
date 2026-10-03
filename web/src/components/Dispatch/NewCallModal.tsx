@@ -42,7 +42,12 @@ export default function NewCallModal() {
           inset={0}
           align="center"
           justify="center"
-          style={{ ...styles, zIndex: 400, backgroundColor: alpha(theme.colors.dark[9], 0.55) }}
+          style={{
+            ...styles,
+            zIndex: 400,
+            pointerEvents: 'auto',
+            backgroundColor: alpha(theme.colors.dark[9], 0.55),
+          }}
           onClick={close}
         >
           <Box

@@ -1,3 +1,4 @@
+
 CREATE TABLE IF NOT EXISTS `nb_dispatch_calls` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `call_id` VARCHAR(32) NOT NULL,

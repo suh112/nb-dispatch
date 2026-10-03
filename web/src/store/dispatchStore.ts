@@ -5,6 +5,7 @@ import type {
   DispatchNotification,
   SyncMeta,
   PanicEvent,
+  UnitDownEvent,
 } from '../types/dispatch';
 
 interface DispatchState {
@@ -19,6 +20,7 @@ interface DispatchState {
   selectedCallId: string | null;
   activeTab: 'dashboard' | 'calls' | 'units';
   panic: PanicEvent | null;
+  unitDown: UnitDownEvent | null;
   newCallOpen: boolean;
 
   setOpen: (open: boolean) => void;
@@ -31,6 +33,7 @@ interface DispatchState {
   pushNotification: (n: Omit<DispatchNotification, 'id' | 'createdAt'>) => void;
   dismissNotification: (id: string) => void;
   setPanic: (p: PanicEvent | null) => void;
+  setUnitDown: (u: UnitDownEvent | null) => void;
   setNewCallOpen: (v: boolean) => void;
 }
 
@@ -46,6 +49,7 @@ export const useDispatchStore = create<DispatchState>((set, get) => ({
   selectedCallId: null,
   activeTab: 'dashboard',
   panic: null,
+  unitDown: null,
   newCallOpen: false,
 
   setOpen: (open) => set({ open }),
@@ -78,5 +82,6 @@ export const useDispatchStore = create<DispatchState>((set, get) => ({
   dismissNotification: (id) =>
     set((state) => ({ notifications: state.notifications.filter((n) => n.id !== id) })),
   setPanic: (p) => set({ panic: p }),
+  setUnitDown: (u) => set({ unitDown: u }),
   setNewCallOpen: (v) => set({ newCallOpen: v }),
 }));
