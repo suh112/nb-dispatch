@@ -1,8 +1,3 @@
---[[
-    nb-dispatch - Configuration
-    Created by NullBound - Veyx (AJ)
-]]
-
 Config = {}
 
 Config.Debug = false
